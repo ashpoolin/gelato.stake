@@ -97,7 +97,7 @@ let MethodMap = new Map([
   ["spl-token_12", "transferChecked"],
 ]);
 
-const insertData = async (signature, fields, values) => {
+const insertData = (signature, fields, values) => {
   return new Promise(function(resolve, reject) {
       const QUERY_TEXT = `INSERT INTO stake_program_event_log(${fields}) VALUES(${values});`
       console.log(QUERY_TEXT)

@@ -121,7 +121,7 @@ const insertParsedTransaction = (req) => {
       const blocktime = data?.blockTime;
       const err = data?.meta.err;
       const fee = data?.meta.fee / LAMPORTS_PER_SOL;
-
+      const signature = data?.transaction.signatures[0];
       data?.transaction.message.instructions.map(async (instruction, index) => {
           const ix = bs58.decode(instruction.data)
           const prefix = ix.slice(0,4);

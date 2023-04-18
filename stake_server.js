@@ -2,7 +2,7 @@
 const bs58 = require('bs58');
 const BN = require('bn.js');
 const Buffer = require('buffer').Buffer;
-const { Connection, LAMPORTS_PER_SOL} = require('@solana/web3.js');
+const { Connection, LAMPORTS_PER_SOL, PublicKey} = require('@solana/web3.js');
 const { publicKey, u64 } = require('@solana/buffer-layout-utils');
 const { blob,  u8, u32, nu64, ns64, struct, seq } = require('@solana/buffer-layout'); // Layout
 // import BN from 'bn.js';
@@ -145,7 +145,7 @@ const insertParsedTransaction = (req) => {
                   const epoch = decodedData.lockup.epoch
                   const unixTimestamp = decodedData.lockup.unix_timestamp
                   const fields = ['program','type','signature','err','slot','blocktime','fee','authority','authority2','authority3','destination','misc1','misc2'];
-                  const values = [`'${program}'`,`'${instructionType}'`,`'${signature}'`,`'${err}'`,slot,blocktime,fee,`'${staker.toBase58()}'`,`'${withdrawer.toBase58()}'`,`'${custodian.toBase58()}'`,`'${stakeAccount.toBase58()}'`,epoch,unixTimestamp];
+                  const values = [`'${program}'`,`'${instructionType}'`,`'${signature}'`,`'${err}'`,slot,blocktime,fee,`'${(new PublicKey(staker)).toBase58()}'`,`'${(new PublicKey(withdrawer)).toBase58()}'`,`'${(new PublicKey(custodian)).toBase58()}'`,`'${(new PublicKey(stakeAccount)).toBase58()}'`,epoch,unixTimestamp];
                   insertData(fields, values);
                   console.log(`${program},${instructionType},${signature},${err},${slot},${blocktime},${fee},${staker},${withdrawer},${custodian},,${stakeAccount},,${epoch},${unixTimestamp},`);
               } 
@@ -154,7 +154,7 @@ const insertParsedTransaction = (req) => {
                   const stakeAuthority = data?.transaction.message.accountKeys[instruction.accounts[5]];
                   const voteAccount = data?.transaction.message.accountKeys[instruction.accounts[1]];
                   const fields = ['program','type','signature','err','slot','blocktime','fee','authority','destination','destination2'];
-                  const values = [`'${program}'`,`'${instructionType}'`,`'${signature}'`,`'${err}'`,slot,blocktime,fee,`'${stakeAuthority.toBase58()}'`,`'${stakeAccount.toBase58()}'`,`'${voteAccount.toBase58()}'`];
+                  const values = [`'${program}'`,`'${instructionType}'`,`'${signature}'`,`'${err}'`,slot,blocktime,fee,`'${(new PublicKey(stakeAuthority)).toBase58()}'`,`'${(new PublicKey(stakeAccount)).toBase58()}'`,`'${(new PublicKey(voteAccount)).toBase58()}'`];
                   insertData(fields, values);
                   console.log(`${program},${instructionType},${signature},${err},${slot},${blocktime},${fee},${stakeAuthority},,,,${stakeAccount},${voteAccount},,,`);
               } 
@@ -162,7 +162,7 @@ const insertParsedTransaction = (req) => {
                   const stakeAuthority = data?.transaction.message.accountKeys[instruction.accounts[2]]
                   const stakeAccount = data?.transaction.message.accountKeys[instruction.accounts[0]]
                   const fields = ['program','type','signature','err','slot','blocktime','fee','authority','source']
-                  const values = [`'${program}'`,`'${instructionType}'`,`'${signature}'`,`'${err}'`,slot,blocktime,fee,`'${stakeAuthority.toBase58()}'`,`'${stakeAccount.toBase58()}'`];
+                  const values = [`'${program}'`,`'${instructionType}'`,`'${signature}'`,`'${err}'`,slot,blocktime,fee,`'${(new PublicKey(stakeAuthority)).toBase58()}'`,`'${(new PublicKey(stakeAccount)).toBase58()}'`];
                   insertData(fields, values);
                   console.log(`${program},${instructionType},${signature},${err},${slot},${blocktime},${fee},${stakeAuthority},,,${stakeAccount},,,,,`);
               } 
@@ -174,9 +174,9 @@ const insertParsedTransaction = (req) => {
                   const to = data?.transaction.message.accountKeys[instruction.accounts[1]]
                   const withdrawAuthority = data?.transaction.message.accountKeys[instruction.accounts[4]]
                   const fields = ['program', 'type', 'signature', 'err', 'slot', 'blocktime', 'fee', 'authority2', 'source', 'destination', 'uiAmount']
-                  const values = [`'${program}'`,`'${instructionType}'`,`'${signature}'`,`'${err}'`,slot,blocktime,fee,`'${withdrawAuthority.toBase58()}'`,`'${from.toBase58()}'`,`'${to.toBase58()}'`,uiAmount];
+                  const values = [`'${program}'`,`'${instructionType}'`,`'${signature}'`,`'${err}'`,slot,blocktime,fee,`'${(new PublicKey(withdrawAuthority)).toBase58()}'`,`'${(new PublicKey(from)).toBase58()}'`,`'${(new PublicKey(to)).toBase58()}'`,uiAmount];
                   insertData(fields, values);
-                  console.log(`${program},${instructionType},${signature},${err},${slot},${blocktime},${fee},,${withdrawAuthority},,${from.toString()},${to.toString()},,,,${uiAmount}`);
+                  console.log(`${program},${instructionType},${signature},${err},${slot},${blocktime},${fee},,${withdrawAuthority},,${(new PublicKey(from)).toBase58()},${(new PublicKey(to)).toString()},,,,${uiAmount}`);
               }
           } 
           else if (program == 'system'){
@@ -187,7 +187,7 @@ const insertParsedTransaction = (req) => {
                   const from = data?.transaction.message.accountKeys[instruction.accounts[0]]
                   const to = data?.transaction.message.accountKeys[instruction.accounts[1]]
                   const fields = ['program','type','signature','err','slot','blocktime','fee','source','destination','uiAmount'];
-                  const values = [`'${program}'`,`'${instructionType}'`,`'${signature}'`,`'${err}'`,slot,blocktime,fee,`'${from.toBase58()}'`,`'${to.toBase58()}'`,uiAmount];
+                  const values = [`'${program}'`,`'${instructionType}'`,`'${signature}'`,`'${err}'`,slot,blocktime,fee,`'${(new PublicKey(from)).toBase58()}'`,`'${(new PublicKey(to)).toBase58()}'`,uiAmount];
                   insertData(fields, values);
                   console.log(`${program},${instructionType},${signature},${err},${slot},${blocktime},${fee},,,,${from},${to},,,,${uiAmount}`);
               }
@@ -212,7 +212,7 @@ const insertParsedTransaction = (req) => {
                   const from = data?.transaction.message.accountKeys[instruction.accounts[0]]
                   const to = data?.transaction.message.accountKeys[instruction.accounts[1]]
                   const fields = ['program','type','signature','err','slot','blocktime','fee','source','destination','uiAmount'];
-                  const values = [`'${program}'`,`'${instructionType}'`,`'${signature}'`,`'${err}'`,slot,blocktime,fee,`'${from.toBase58()}'`,`'${to.toBase58()}'`,uiAmount];
+                  const values = [`'${program}'`,`'${instructionType}'`,`'${signature}'`,`'${err}'`,slot,blocktime,fee,`'${(new PublicKey(from)).toBase58()}'`,`'${(new PublicKey(to)).toBase58()}'`,uiAmount];
                   insertData(fields, values);
                   console.log(`${program},${instructionType},${signature},${err},${slot},${blocktime},${fee},,,,${from},${to},,,,${uiAmount}`);
               }
@@ -231,7 +231,7 @@ const insertParsedTransaction = (req) => {
                   const decimals = 0 // Number(deserialized.decimals); // wrong
                   const uiAmount = amount // / 10 ** decimals;
                   const fields = ['program','type','signature','err','slot','blocktime','fee','authority','source','destination','destination2','misc1','misc2','uiAmount']
-                  const values = [`'${program}'`,`'${instructionType}'`,`'${signature}'`,`'${err}'`,slot,blocktime,fee,`'${authority.toBase58()}'`,`'${source.toBase58()}'`,`'${destination.toBase58()}'`,`'${mint.toBase58()}'`,decimals,uiAmount];
+                  const values = [`'${program}'`,`'${instructionType}'`,`'${signature}'`,`'${err}'`,slot,blocktime,fee,`'${(new PublicKey(authority)).toBase58()}'`,`'${(new PublicKey(source)).toBase58()}'`,`'${(new PublicKey(destination)).toBase58()}'`,`'${(new PublicKey(mint)).toBase58()}'`,decimals,uiAmount];
                   insertData(fields, values);
                   console.log(`${program},${instructionType},${signature},${err},${slot},${blocktime},${fee},${authority},,,${source},,${destination},${mint},${decimals},${uiAmount}`);
               } 
@@ -241,7 +241,7 @@ const insertParsedTransaction = (req) => {
                   const decimals = Number(deserialized.decimals);
                   const uiAmount = amount / 10 ** decimals;
                   const fields = ['program','type','signature','err','slot','blocktime','fee','authority','source','destination2','misc1','misc2','uiAmount']
-                  const values = [`'${program}'`,`'${instructionType}'`,`'${signature}'`,`'${err}'`,slot,blocktime,fee,`'${authority.toBase58()}'`,`'${source.toBase58()}'`,`'${destination.toBase58()}'`,`'${mint.toBase58()}'`,decimals,uiAmount];
+                  const values = [`'${program}'`,`'${instructionType}'`,`'${signature}'`,`'${err}'`,slot,blocktime,fee,`'${(new PublicKey(authority)).toBase58()}'`,`'${(new PublicKey(source)).toBase58()}'`,`'${(new PublicKey(destination)).toBase58()}'`,`'${(new PublicKey(mint)).toBase58()}'`,decimals,uiAmount];
                   insertData(fields, values);
                   console.log(`${program},${instructionType},${signature},${err},${slot},${blocktime},${fee},${authority},,,${source},,${destination},${mint},${decimals},${uiAmount}`);
               }

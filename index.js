@@ -21,7 +21,7 @@ app.get('/test', (req, res) => {
 });
 
 app.post('/webhooks', (req, res) => {
-  stake_server.insertParsedTransaction(req)
+  webhook_server.insertParsedTransaction(req)
   .then(response => {
     res.status(200).send(response);
   })

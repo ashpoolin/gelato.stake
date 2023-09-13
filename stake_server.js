@@ -93,6 +93,7 @@ let MethodMap = new Map([
   ["stake_0", "initialize"], // confirmed
   ["stake_5", "deactivate"], // confirmed
   ["stake_2", "delegate"], // confirmed
+  ["stake_7", "merge"], // confirmed
   ["spl-token_3", "transfer"],
   ["spl-token_12", "transferChecked"],
 ]);
@@ -123,11 +124,11 @@ const insertParsedTransaction = (req) => {
       const fee = data?.meta.fee / LAMPORTS_PER_SOL;
       const signature = data?.transaction.signatures[0];
       data?.transaction.message.instructions.map(async (instruction, index) => {
-          const ix = bs58.decode(instruction.data)
-          const prefix = ix.slice(0,4);
-          const disc = (Buffer.from(prefix)).readUInt32LE()
           const programAddress = data?.transaction.message.accountKeys[instruction.programIdIndex].toString()
           const program = programMap.get(programAddress);
+          const ix = bs58.decode(instruction.data)
+          const prefix = ix.slice(0,4);
+          const disc = (program === 'spl-token') ? prefix[0] : (Buffer.from(prefix)).readUInt32LE();
           const instructionType = MethodMap.get(`${program}_${disc}`)
 
           // console.log(`accountKeys: ${
@@ -178,6 +179,15 @@ const insertParsedTransaction = (req) => {
                   insertData(signature, fields, values);
                   console.log(`${program},${instructionType},${signature},${err},${slot},${blocktime},${fee},,${withdrawAuthority},,${(new PublicKey(from)).toBase58()},${(new PublicKey(to)).toString()},,,,${uiAmount}`);
               }
+              else if (instructionType == 'merge') {
+                const from = data?.transaction.message.accountKeys[instruction.accounts[1]] // source
+                const to = data?.transaction.message.accountKeys[instruction.accounts[0]] // destination
+                const stakeAuthority = data?.transaction.message.accountKeys[instruction.accounts[4]] // stake authority
+                const fields = ['program', 'type', 'signature', 'err', 'slot', 'blocktime', 'fee', 'authority', 'source', 'destination']
+                const values = [`'${program}'`,`'${instructionType}'`,`'${signature}'`,`'${err}'`,slot,blocktime,fee,`'${(new PublicKey(stakeAuthority)).toBase58()}'`,`'${(new PublicKey(from)).toBase58()}'`,`'${(new PublicKey(to)).toBase58()}'`];
+                insertData(signature, fields, values);
+                console.log(`${program},${instructionType},${signature},${err},${slot},${blocktime},${fee},${stakeAuthority},,,${(new PublicKey(from)).toBase58()},${(new PublicKey(to)).toString()},,,,`);
+            }
           } 
           else if (program == 'system'){
               if (instructionType == 'createAccount') {
@@ -221,29 +231,38 @@ const insertParsedTransaction = (req) => {
               const prefix2 = ix.slice(0,1);
               const disc = (Buffer.from(prefix2)).readUInt8()
               const instructionType = MethodMap.get(`${program}_${disc}`)
-              const source = data?.transaction.message.accountKeys[instruction.accounts[0]]
-              const mint = data?.transaction.message.accountKeys[instruction.accounts[1]]
-              const destination = data?.transaction.message.accountKeys[instruction.accounts[2]]
-              const authority = data?.transaction.message.accountKeys[instruction.accounts[3]]
+              // const source = data?.transaction.message.accountKeys[instruction.accounts[0]]
+              // const mint = data?.transaction.message.accountKeys[instruction.accounts[1]]
+              // const destination = data?.transaction.message.accountKeys[instruction.accounts[2]]
+              // const authority = data?.transaction.message.accountKeys[instruction.accounts[3]]
               if (instructionType == 'transfer') {
+                  const source = data?.transaction.message.accountKeys[instruction.accounts[0]]
+                  // const mint = data?.transaction.message.accountKeys[instruction.accounts[1]] // not available info?
+                  const destination = data?.transaction.message.accountKeys[instruction.accounts[1]]
+                  const authority = data?.transaction.message.accountKeys[instruction.accounts[2]]
                   const deserialized = TokenTransferLayout.decode(ix);
                   const amount = Number(deserialized.amount); // wrong
+                  // const mint = "not available"
                   const decimals = 0 // Number(deserialized.decimals); // wrong
-                  const uiAmount = amount // / 10 ** decimals;
-                  const fields = ['program','type','signature','err','slot','blocktime','fee','authority','source','destination','destination2','misc1','misc2','uiAmount']
-                  const values = [`'${program}'`,`'${instructionType}'`,`'${signature}'`,`'${err}'`,slot,blocktime,fee,`'${(new PublicKey(authority)).toBase58()}'`,`'${(new PublicKey(source)).toBase58()}'`,`'${(new PublicKey(destination)).toBase58()}'`,`'${(new PublicKey(mint)).toBase58()}'`,decimals,uiAmount];
+                  const uiAmount = amount / 10 ** decimals; // wrong
+                  const fields = ['program','type','signature','err','slot','blocktime','fee','authority','source','destination','misc2','uiAmount']
+                  const values = [`'${program}'`,`'${instructionType}'`,`'${signature}'`,`'${err}'`,slot,blocktime,fee,`'${(new PublicKey(authority)).toBase58()}'`,`'${(new PublicKey(source)).toBase58()}'`,`'${(new PublicKey(destination)).toBase58()}'`,decimals,uiAmount];
                   insertData(signature, fields, values);
-                  console.log(`${program},${instructionType},${signature},${err},${slot},${blocktime},${fee},${authority},,,${source},,${destination},${mint},${decimals},${uiAmount}`);
+                  console.log(`${program},${instructionType},${signature},${err},${slot},${blocktime},${fee},${authority},,,${source},,${destination},,${decimals},${uiAmount}`);
               } 
               else if (instructionType == 'transferChecked') {
+                const source = data?.transaction.message.accountKeys[instruction.accounts[0]]
+                const mint = data?.transaction.message.accountKeys[instruction.accounts[1]]
+                const destination = data?.transaction.message.accountKeys[instruction.accounts[2]]
+                const authority = data?.transaction.message.accountKeys[instruction.accounts[3]]
                   const deserialized = TokenTransferCheckedLayout.decode(ix);
                   const amount = Number(deserialized.amount);
                   const decimals = Number(deserialized.decimals);
                   const uiAmount = amount / 10 ** decimals;
-                  const fields = ['program','type','signature','err','slot','blocktime','fee','authority','source','destination2','misc1','misc2','uiAmount']
+                  const fields = ['program','type','signature','err','slot','blocktime','fee','authority','source','destination','misc1','misc2','uiAmount']
                   const values = [`'${program}'`,`'${instructionType}'`,`'${signature}'`,`'${err}'`,slot,blocktime,fee,`'${(new PublicKey(authority)).toBase58()}'`,`'${(new PublicKey(source)).toBase58()}'`,`'${(new PublicKey(destination)).toBase58()}'`,`'${(new PublicKey(mint)).toBase58()}'`,decimals,uiAmount];
                   insertData(signature, fields, values);
-                  console.log(`${program},${instructionType},${signature},${err},${slot},${blocktime},${fee},${authority},,,${source},,${destination},${mint},${decimals},${uiAmount}`);
+                  console.log(`${program},${instructionType},${signature},${err},${slot},${blocktime},${fee},${authority},,,${source},${destination}, ,${mint},${decimals},${uiAmount}`);
               }
           }
           else {

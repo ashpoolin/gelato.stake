@@ -100,7 +100,7 @@ let MethodMap = new Map([
 
 const insertData = (signature, fields, values) => {
   return new Promise(function(resolve, reject) {
-      const QUERY_TEXT = `INSERT INTO stake_program_event_log(${fields}) VALUES(${values});`
+      const QUERY_TEXT = `INSERT INTO stake_program_event_log(${fields}) VALUES(${values}) ON CONFLICT DO NOTHING;`
       console.log(QUERY_TEXT)
       pool.query(QUERY_TEXT, (error, results) => {
         if (error) {

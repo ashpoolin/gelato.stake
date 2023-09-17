@@ -114,6 +114,12 @@ const insertData = (signature, fields, values) => {
   });
 }
 
+const hashMessage = (message) => {
+  const hash = sha256(message).toString();
+  const encodedHash = bs58.encode(Buffer.from(hash, 'hex'));
+  return encodedHash;
+}
+
 const insertParsedTransaction = (req) => {
   
   try {
@@ -148,8 +154,7 @@ const insertParsedTransaction = (req) => {
                   const unixTimestamp = decodedData.lockup.unix_timestamp
                   const message = `${program},${instructionType},${signature},${err},${slot},${blocktime},${fee},${staker},${withdrawer},${custodian},,${stakeAccount},,${epoch},${unixTimestamp},`;
                   console.log(message);
-                  const hash = sha256(message).toString();
-                  const encodedHash = bs58.encode(Buffer.from(hash, 'hex'));
+                  const encodedHash = hashMessage(message);
                   const fields = ['program','type','signature','err','slot','blocktime','fee','authority','authority2','authority3','destination','misc1','misc2','serial'];
                   const values = [`'${program}'`,`'${instructionType}'`,`'${signature}'`,`'${err}'`,slot,blocktime,fee,`'${(new PublicKey(staker)).toBase58()}'`,`'${(new PublicKey(withdrawer)).toBase58()}'`,`'${(new PublicKey(custodian)).toBase58()}'`,`'${(new PublicKey(stakeAccount)).toBase58()}'`,epoch,unixTimestamp,`'${encodedHash}'`];
                   insertData(signature, fields, values);
@@ -160,8 +165,7 @@ const insertParsedTransaction = (req) => {
                   const voteAccount = data?.transaction.message.accountKeys[instruction.accounts[1]];
                   const message = `${program},${instructionType},${signature},${err},${slot},${blocktime},${fee},${stakeAuthority},,,,${stakeAccount},${voteAccount},,,`;
                   console.log(message);
-                  const hash = sha256(message).toString();
-                  const encodedHash = bs58.encode(Buffer.from(hash, 'hex'));
+                  const encodedHash = hashMessage(message);
                   const fields = ['program','type','signature','err','slot','blocktime','fee','authority','destination','destination2','serial'];
                   const values = [`'${program}'`,`'${instructionType}'`,`'${signature}'`,`'${err}'`,slot,blocktime,fee,`'${(new PublicKey(stakeAuthority)).toBase58()}'`,`'${(new PublicKey(stakeAccount)).toBase58()}'`,`'${(new PublicKey(voteAccount)).toBase58()}'`,`'${encodedHash}'`];
                   insertData(signature, fields, values);
@@ -171,8 +175,7 @@ const insertParsedTransaction = (req) => {
                   const stakeAccount = data?.transaction.message.accountKeys[instruction.accounts[0]]
                   const message = `${program},${instructionType},${signature},${err},${slot},${blocktime},${fee},${stakeAuthority},,,${stakeAccount},,,,,`;
                   console.log(message);
-                  const hash = sha256(message).toString();
-                  const encodedHash = bs58.encode(Buffer.from(hash, 'hex'));
+                  const encodedHash = hashMessage(message);
                   const fields = ['program','type','signature','err','slot','blocktime','fee','authority','source','serial'];
                   const values = [`'${program}'`,`'${instructionType}'`,`'${signature}'`,`'${err}'`,slot,blocktime,fee,`'${(new PublicKey(stakeAuthority)).toBase58()}'`,`'${(new PublicKey(stakeAccount)).toBase58()}'`,`'${encodedHash}'`];
                   insertData(signature, fields, values);
@@ -186,8 +189,7 @@ const insertParsedTransaction = (req) => {
                   const withdrawAuthority = data?.transaction.message.accountKeys[instruction.accounts[4]]
                   const message = `${program},${instructionType},${signature},${err},${slot},${blocktime},${fee},,${withdrawAuthority},,${(new PublicKey(from)).toBase58()},${(new PublicKey(to)).toString()},,,,${uiAmount}`;
                   console.log(message);
-                  const hash = sha256(message).toString();
-                  const encodedHash = bs58.encode(Buffer.from(hash, 'hex'));
+                  const encodedHash = hashMessage(message);
                   const fields = ['program', 'type', 'signature', 'err', 'slot', 'blocktime', 'fee', 'authority2', 'source', 'destination', 'uiAmount', 'serial']
                   const values = [`'${program}'`,`'${instructionType}'`,`'${signature}'`,`'${err}'`,slot,blocktime,fee,`'${(new PublicKey(withdrawAuthority)).toBase58()}'`,`'${(new PublicKey(from)).toBase58()}'`,`'${(new PublicKey(to)).toBase58()}'`,uiAmount,`'${encodedHash}'`];
                   insertData(signature, fields, values);
@@ -198,8 +200,7 @@ const insertParsedTransaction = (req) => {
                 const stakeAuthority = data?.transaction.message.accountKeys[instruction.accounts[4]] // stake authority
                 const message = `${program},${instructionType},${signature},${err},${slot},${blocktime},${fee},${stakeAuthority},,,${(new PublicKey(from)).toBase58()},${(new PublicKey(to)).toString()},,,,`;
                 console.log(message);
-                const hash = sha256(message).toString();
-                const encodedHash = bs58.encode(Buffer.from(hash, 'hex'));
+                const encodedHash = hashMessage(message);
                 const fields = ['program', 'type', 'signature', 'err', 'slot', 'blocktime', 'fee', 'authority', 'source', 'destination', 'serial']
                 const values = [`'${program}'`,`'${instructionType}'`,`'${signature}'`,`'${err}'`,slot,blocktime,fee,`'${(new PublicKey(stakeAuthority)).toBase58()}'`,`'${(new PublicKey(from)).toBase58()}'`,`'${(new PublicKey(to)).toBase58()}'`,`'${encodedHash}'`];
                 insertData(signature, fields, values);
@@ -214,8 +215,7 @@ const insertParsedTransaction = (req) => {
                   const to = data?.transaction.message.accountKeys[instruction.accounts[1]]
                   const message = `${program},${instructionType},${signature},${err},${slot},${blocktime},${fee},,,,${from},${to},,,,${uiAmount}`;
                   console.log(message);
-                  const hash = sha256(message).toString();
-                  const encodedHash = bs58.encode(Buffer.from(hash, 'hex'));
+                  const encodedHash = hashMessage(message);
                   const fields = ['program','type','signature','err','slot','blocktime','fee','source','destination','uiAmount','serial'];
                   const values = [`'${program}'`,`'${instructionType}'`,`'${signature}'`,`'${err}'`,slot,blocktime,fee,`'${(new PublicKey(from)).toBase58()}'`,`'${(new PublicKey(to)).toBase58()}'`,uiAmount,`'${encodedHash}'`];
                   insertData(signature, fields, values);
@@ -230,8 +230,7 @@ const insertParsedTransaction = (req) => {
                   const to = data?.transaction.message.accountKeys[instruction.accounts[1]]
                   const message = `${program},${instructionType},${signature},${err},${slot},${blocktime},${fee},,,,${from},${to},,${seed},,${uiAmount}`;
                   console.log(message);
-                  const hash = sha256(message).toString();
-                  const encodedHash = bs58.encode(Buffer.from(hash, 'hex'));
+                  const encodedHash = hashMessage(message);
                   const fields = ['program','type','signature','err','slot','blocktime','fee','source','destination','misc1','uiAmount','serial'];
                   const values = [`'${program}'`,`'${instructionType}'`,`'${signature}'`,`'${err}'`,slot,blocktime,fee,`'${from}'`,`'${to}'`,`'${seed}'`,`'${uiAmount}'`,`'${encodedHash}'`];
                   insertData(signature, fields, values);
@@ -245,8 +244,7 @@ const insertParsedTransaction = (req) => {
                   const to = data?.transaction.message.accountKeys[instruction.accounts[1]]
                   const message = `${program},${instructionType},${signature},${err},${slot},${blocktime},${fee},,,,${from},${to},,,,${uiAmount}`;
                   console.log(message);
-                  const hash = sha256(message).toString();
-                  const encodedHash = bs58.encode(Buffer.from(hash, 'hex'));
+                  const encodedHash = hashMessage(message);
                   const fields = ['program','type','signature','err','slot','blocktime','fee','source','destination','uiAmount','serial'];
                   const values = [`'${program}'`,`'${instructionType}'`,`'${signature}'`,`'${err}'`,slot,blocktime,fee,`'${(new PublicKey(from)).toBase58()}'`,`'${(new PublicKey(to)).toBase58()}'`,uiAmount,`'${encodedHash}'`];
                   insertData(signature, fields, values);
@@ -272,8 +270,7 @@ const insertParsedTransaction = (req) => {
                   const uiAmount = amount / 10 ** decimals; // wrong
                   const message = `${program},${instructionType},${signature},${err},${slot},${blocktime},${fee},${authority},,,${source},,${destination},,${decimals},${uiAmount}`;
                   console.log(message);
-                  const hash = sha256(message).toString();
-                  const encodedHash = bs58.encode(Buffer.from(hash, 'hex'));
+                  const encodedHash = hashMessage(message);
                   const fields = ['program','type','signature','err','slot','blocktime','fee','authority','source','destination','misc2','uiAmount','serial']
                   const values = [`'${program}'`,`'${instructionType}'`,`'${signature}'`,`'${err}'`,slot,blocktime,fee,`'${(new PublicKey(authority)).toBase58()}'`,`'${(new PublicKey(source)).toBase58()}'`,`'${(new PublicKey(destination)).toBase58()}'`,decimals,uiAmount,`'${encodedHash}'`];
                   insertData(signature, fields, values);
@@ -289,8 +286,7 @@ const insertParsedTransaction = (req) => {
                   const uiAmount = amount / 10 ** decimals;
                   const message = `${program},${instructionType},${signature},${err},${slot},${blocktime},${fee},${authority},,,${source},${destination}, ,${mint},${decimals},${uiAmount}`;
                   console.log(message);
-                  const hash = sha256(message).toString();
-                  const encodedHash = bs58.encode(Buffer.from(hash, 'hex'));
+                  const encodedHash = hashMessage(message);
                   const fields = ['program','type','signature','err','slot','blocktime','fee','authority','source','destination','misc1','misc2','uiAmount','serial']
                   const values = [`'${program}'`,`'${instructionType}'`,`'${signature}'`,`'${err}'`,slot,blocktime,fee,`'${(new PublicKey(authority)).toBase58()}'`,`'${(new PublicKey(source)).toBase58()}'`,`'${(new PublicKey(destination)).toBase58()}'`,`'${(new PublicKey(mint)).toBase58()}'`,decimals,uiAmount,`'${encodedHash}'`];
                   insertData(signature, fields, values);

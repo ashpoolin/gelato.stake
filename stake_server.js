@@ -62,6 +62,10 @@ const WithdrawLayout = struct([
   u32 ('discriminator'),
   u64('lamports'),
 ]);
+const SplitLayout = struct([
+  u32 ('discriminator'),
+  u64('lamports'),
+]);
 
 // spl-token interfaces
 const TokenTransferLayout = struct([
@@ -90,10 +94,11 @@ let MethodMap = new Map([
   ["system_2", "transfer"],
   ["system_3", "createAccountWithSeed"],
   ["system_4", "advanceNonceAccount"],
-  ["stake_4", "withdraw"], // confirmed
   ["stake_0", "initialize"], // confirmed
-  ["stake_5", "deactivate"], // confirmed
   ["stake_2", "delegate"], // confirmed
+  ["stake_3", "split"], // confirmed
+  ["stake_4", "withdraw"], // confirmed
+  ["stake_5", "deactivate"], // confirmed
   ["stake_7", "merge"], // confirmed
   ["spl-token_3", "transfer"],
   ["spl-token_12", "transferChecked"],
@@ -203,6 +208,20 @@ const insertParsedTransaction = (req) => {
                 const encodedHash = hashMessage(message);
                 const fields = ['program', 'type', 'signature', 'err', 'slot', 'blocktime', 'fee', 'authority', 'source', 'destination', 'serial']
                 const values = [`'${program}'`,`'${instructionType}'`,`'${signature}'`,`'${err}'`,slot,blocktime,fee,`'${(new PublicKey(stakeAuthority)).toBase58()}'`,`'${(new PublicKey(from)).toBase58()}'`,`'${(new PublicKey(to)).toBase58()}'`,`'${encodedHash}'`];
+                insertData(signature, fields, values);
+              }
+              else if (instructionType == 'split') {
+                const deserialized = SplitLayout.decode(ix);
+                const lamports = Number(deserialized.lamports);
+                const uiAmount = lamports / LAMPORTS_PER_SOL
+                const from = data?.transaction.message.accountKeys[instruction.accounts[0]] // source
+                const to = data?.transaction.message.accountKeys[instruction.accounts[1]] // destination
+                const stakeAuthority = data?.transaction.message.accountKeys[instruction.accounts[2]] // stake authority
+                const message = `${program},${instructionType},${signature},${err},${slot},${blocktime},${fee},${stakeAuthority},,,${(new PublicKey(from)).toBase58()},${(new PublicKey(to)).toString()},,,,${uiAmount}`;
+                console.log(message);
+                const encodedHash = hashMessage(message);
+                const fields = ['program', 'type', 'signature', 'err', 'slot', 'blocktime', 'fee', 'authority', 'source', 'destination', 'uiAmount', 'serial']
+                const values = [`'${program}'`,`'${instructionType}'`,`'${signature}'`,`'${err}'`,slot,blocktime,fee,`'${(new PublicKey(stakeAuthority)).toBase58()}'`,`'${(new PublicKey(from)).toBase58()}'`,`'${(new PublicKey(to)).toBase58()}'`,uiAmount,`'${encodedHash}'`];
                 insertData(signature, fields, values);
             }
           } 

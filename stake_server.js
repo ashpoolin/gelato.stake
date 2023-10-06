@@ -36,7 +36,7 @@ const CreateAccountWithSeedLayout = struct([
   publicKey('base'),
   u8('seedLength'),
   blob(24, 'seed'), 
-  // seq(u8(), 24, 'seed'), 
+  // seq(u8(), 24, 'seed'),
   u64('lamports'), 
   u64('space'), 
   publicKey('owner'), 
@@ -79,6 +79,17 @@ const TokenTransferCheckedLayout = struct([
   u8('decimals'),
 ]);
 
+// const AuthorizeLayout = struct([
+  // u8('discriminator'),
+  // publicKey('custodian'),
+  // u8('authorityType'),
+// ]);
+// 
+// const AuthorizeCheckedLayout = struct([
+  // u8('discriminator'),
+  // u8('authorizeWithCustodian'),
+// ]);
+
 let programMap = new Map([
   ["11111111111111111111111111111111", "system"],
   ["Stake11111111111111111111111111111111111111", "stake"],
@@ -95,11 +106,13 @@ let MethodMap = new Map([
   ["system_3", "createAccountWithSeed"],
   ["system_4", "advanceNonceAccount"],
   ["stake_0", "initialize"], // confirmed
+  ["stake_1", "authorize"], // confirmed
   ["stake_2", "delegate"], // confirmed
   ["stake_3", "split"], // confirmed
   ["stake_4", "withdraw"], // confirmed
   ["stake_5", "deactivate"], // confirmed
   ["stake_7", "merge"], // confirmed
+  ["stake_10", "authorizeChecked"], // confirmed
   ["spl-token_3", "transfer"],
   ["spl-token_12", "transferChecked"],
 ]);
@@ -223,7 +236,28 @@ const insertParsedTransaction = (req) => {
                 const fields = ['program', 'type', 'signature', 'err', 'slot', 'blocktime', 'fee', 'authority', 'source', 'destination', 'uiAmount', 'serial']
                 const values = [`'${program}'`,`'${instructionType}'`,`'${signature}'`,`'${err}'`,slot,blocktime,fee,`'${(new PublicKey(stakeAuthority)).toBase58()}'`,`'${(new PublicKey(from)).toBase58()}'`,`'${(new PublicKey(to)).toBase58()}'`,uiAmount,`'${encodedHash}'`];
                 insertData(signature, fields, values);
-            }
+              }
+              else if (instructionType === 'authorize') {
+                // const deserialized = AuthorizeLayout.decode(ix);
+                const authority3 = 'no custodian found' //(new PublicKey(deserialized.custodian)).toBase58();
+                const source = data?.transaction.message.accountKeys[instruction.accounts[0]] // stakeAccount
+                const authority = data?.transaction.message.accountKeys[instruction.accounts[2]] // old authority
+                const authority2 = 'new authority not found' // new authority
+                const fields = ['program', 'type', 'signature', 'err', 'slot', 'blocktime', 'fee', 'authority', 'authority2', 'authority3', 'source', 'serial']
+                const values = [`'${program}'`,`'${instructionType}'`,`'${signature}'`,`'${err}'`,slot,blocktime,fee,`'${(new PublicKey(authority)).toBase58()}'`,`'${authority2}'`,`'${authority3}'`,`'${(new PublicKey(source)).toBase58()}'`,`'${encodedHash}'`];
+                console.log(`${program},${instructionType},${signature},${err},${slot},${blocktime},${fee},${authority},${authority2},${authority3},${(new PublicKey(source)).toBase58()},,,,,${encodedHash}`);
+              }
+              else if (instructionType === 'authorizeChecked') {
+                // const deserialized = AuthorizeCheckedLayout.decode(ix);
+                // const authorizeWithCustodian = deserialized.authorizeWithCustodian;
+                const source = data?.transaction.message.accountKeys[instruction.accounts[0]] // stakeAccount
+                const authority = data?.transaction.message.accountKeys[instruction.accounts[2]] // old authority
+                const authority2 = data?.transaction.message.accountKeys[instruction.accounts[3]] // new authority
+                const authority3 = data?.transaction.message.accountKeys[instruction.accounts[4]] // custodian
+                const fields = ['program', 'type', 'signature', 'err', 'slot', 'blocktime', 'fee', 'authority', 'authority2', 'authority3', 'source','serial']
+                const values = [`'${program}'`,`'${instructionType}'`,`'${signature}'`,`'${err}'`,slot,blocktime,fee,`'${(new PublicKey(authority)).toBase58()}'`,`'${(new PublicKey(authority2)).toBase58()}'`,`'${(new PublicKey(authority3)).toBase58()}'`,`'${(new PublicKey(source)).toBase58()}',${encodedHash}'`];
+                console.log(`${program},${instructionType},${signature},${err},${slot},${blocktime},${fee},${authority},${authority2},${authority3},${(new PublicKey(source)).toBase58()},,,,,${encodedHash}`);
+              }
           } 
           else if (program == 'system'){
               if (instructionType == 'createAccount') {

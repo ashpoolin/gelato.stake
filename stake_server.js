@@ -151,11 +151,20 @@ const insertParsedTransaction = (req) => {
       data?.transaction.message.instructions.map(async (instruction, index) => {
           const programAddress = data?.transaction.message.accountKeys[instruction.programIdIndex].toString()
           const program = programMap.get(programAddress);
-          const ix = bs58.decode(instruction.data)
-          const prefix = ix.slice(0,4);
-          const disc = (program === 'spl-token') ? prefix[0] : (Buffer.from(prefix)).readUInt32LE();
+          
+          const ix = bs58.decode(instruction.data);
+          let disc;
+          try {
+            if (program === 'spl-token') {
+              disc = ix.slice(0,1);
+            } else {
+              disc = (Buffer.from(ix.slice(0,4))).readUInt32LE()
+            }
+          } catch (err) {
+            disc = 999;
+          }
+          
           const instructionType = MethodMap.get(`${program}_${disc}`)
-
           // console.log(`accountKeys: ${
           //     data?.transaction.message.accountKeys.map(key => {
           //         return key

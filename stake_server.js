@@ -140,6 +140,7 @@ const hashMessage = (message) => {
 
 const insertParsedTransaction = (req) => {
   
+  let promises = [];
   try {
       const data = req.body[0];
       // console.log(JSON.parse(JSON.stringify(data)));
@@ -148,7 +149,7 @@ const insertParsedTransaction = (req) => {
       const err = data?.meta.err;
       const fee = data?.meta.fee / LAMPORTS_PER_SOL;
       const signature = data?.transaction.signatures[0];
-      data?.transaction.message.instructions.map(async (instruction, index) => {
+      promises = data?.transaction.message.instructions.map(async (instruction, index) => {
           const programAddress = data?.transaction.message.accountKeys[instruction.programIdIndex].toString()
           const program = programMap.get(programAddress);
           
@@ -184,7 +185,7 @@ const insertParsedTransaction = (req) => {
                   const encodedHash = hashMessage(message);
                   const fields = ['program','type','signature','err','slot','blocktime','fee','authority','authority2','authority3','destination','misc1','misc2','serial'];
                   const values = [`'${program}'`,`'${instructionType}'`,`'${signature}'`,`'${err}'`,slot,blocktime,fee,`'${(new PublicKey(staker)).toBase58()}'`,`'${(new PublicKey(withdrawer)).toBase58()}'`,`'${(new PublicKey(custodian)).toBase58()}'`,`'${(new PublicKey(stakeAccount)).toBase58()}'`,epoch,unixTimestamp,`'${encodedHash}'`];
-                  insertData(signature, fields, values);
+                  return insertData(signature, fields, values);
               } 
               else if (instructionType == 'delegate') {
                   const stakeAccount = data?.transaction.message.accountKeys[instruction.accounts[0]];
@@ -195,7 +196,7 @@ const insertParsedTransaction = (req) => {
                   const encodedHash = hashMessage(message);
                   const fields = ['program','type','signature','err','slot','blocktime','fee','authority','destination','destination2','serial'];
                   const values = [`'${program}'`,`'${instructionType}'`,`'${signature}'`,`'${err}'`,slot,blocktime,fee,`'${(new PublicKey(stakeAuthority)).toBase58()}'`,`'${(new PublicKey(stakeAccount)).toBase58()}'`,`'${(new PublicKey(voteAccount)).toBase58()}'`,`'${encodedHash}'`];
-                  insertData(signature, fields, values);
+                  return insertData(signature, fields, values);
               } 
               else if (instructionType == 'deactivate') {
                   const stakeAuthority = data?.transaction.message.accountKeys[instruction.accounts[2]]
@@ -205,7 +206,7 @@ const insertParsedTransaction = (req) => {
                   const encodedHash = hashMessage(message);
                   const fields = ['program','type','signature','err','slot','blocktime','fee','authority','source','serial'];
                   const values = [`'${program}'`,`'${instructionType}'`,`'${signature}'`,`'${err}'`,slot,blocktime,fee,`'${(new PublicKey(stakeAuthority)).toBase58()}'`,`'${(new PublicKey(stakeAccount)).toBase58()}'`,`'${encodedHash}'`];
-                  insertData(signature, fields, values);
+                  return insertData(signature, fields, values);
               } 
               else if (instructionType == 'withdraw') {
                   const deserialized = WithdrawLayout.decode(ix);
@@ -219,7 +220,7 @@ const insertParsedTransaction = (req) => {
                   const encodedHash = hashMessage(message);
                   const fields = ['program', 'type', 'signature', 'err', 'slot', 'blocktime', 'fee', 'authority2', 'source', 'destination', 'uiAmount', 'serial']
                   const values = [`'${program}'`,`'${instructionType}'`,`'${signature}'`,`'${err}'`,slot,blocktime,fee,`'${(new PublicKey(withdrawAuthority)).toBase58()}'`,`'${(new PublicKey(from)).toBase58()}'`,`'${(new PublicKey(to)).toBase58()}'`,uiAmount,`'${encodedHash}'`];
-                  insertData(signature, fields, values);
+                  return insertData(signature, fields, values);
               }
               else if (instructionType == 'merge') {
                 const from = data?.transaction.message.accountKeys[instruction.accounts[1]] // source
@@ -230,7 +231,7 @@ const insertParsedTransaction = (req) => {
                 const encodedHash = hashMessage(message);
                 const fields = ['program', 'type', 'signature', 'err', 'slot', 'blocktime', 'fee', 'authority', 'source', 'destination', 'serial']
                 const values = [`'${program}'`,`'${instructionType}'`,`'${signature}'`,`'${err}'`,slot,blocktime,fee,`'${(new PublicKey(stakeAuthority)).toBase58()}'`,`'${(new PublicKey(from)).toBase58()}'`,`'${(new PublicKey(to)).toBase58()}'`,`'${encodedHash}'`];
-                insertData(signature, fields, values);
+                return insertData(signature, fields, values);
               }
               else if (instructionType == 'split') {
                 const deserialized = SplitLayout.decode(ix);
@@ -244,7 +245,7 @@ const insertParsedTransaction = (req) => {
                 const encodedHash = hashMessage(message);
                 const fields = ['program', 'type', 'signature', 'err', 'slot', 'blocktime', 'fee', 'authority', 'source', 'destination', 'uiAmount', 'serial']
                 const values = [`'${program}'`,`'${instructionType}'`,`'${signature}'`,`'${err}'`,slot,blocktime,fee,`'${(new PublicKey(stakeAuthority)).toBase58()}'`,`'${(new PublicKey(from)).toBase58()}'`,`'${(new PublicKey(to)).toBase58()}'`,uiAmount,`'${encodedHash}'`];
-                insertData(signature, fields, values);
+                return insertData(signature, fields, values);
               }
               else if (instructionType === 'authorize') {
                 // const deserialized = AuthorizeLayout.decode(ix);
@@ -252,9 +253,12 @@ const insertParsedTransaction = (req) => {
                 const source = data?.transaction.message.accountKeys[instruction.accounts[0]] // stakeAccount
                 const authority = data?.transaction.message.accountKeys[instruction.accounts[2]] // old authority
                 const authority2 = 'new authority not found' // new authority
+                const message = `${program},${instructionType},${signature},${err},${slot},${blocktime},${fee},${(new PublicKey(authority)).toBase58()},${authority2},${authority3},${(new PublicKey(source)).toBase58()},,,,,`;
+                console.log(message);
+                const encodedHash = hashMessage(message);
                 const fields = ['program', 'type', 'signature', 'err', 'slot', 'blocktime', 'fee', 'authority', 'authority2', 'authority3', 'source', 'serial']
                 const values = [`'${program}'`,`'${instructionType}'`,`'${signature}'`,`'${err}'`,slot,blocktime,fee,`'${(new PublicKey(authority)).toBase58()}'`,`'${authority2}'`,`'${authority3}'`,`'${(new PublicKey(source)).toBase58()}'`,`'${encodedHash}'`];
-                console.log(`${program},${instructionType},${signature},${err},${slot},${blocktime},${fee},${authority},${authority2},${authority3},${(new PublicKey(source)).toBase58()},,,,,${encodedHash}`);
+                return insertData(signature, fields, values);
               }
               else if (instructionType === 'authorizeChecked') {
                 // const deserialized = AuthorizeCheckedLayout.decode(ix);
@@ -263,9 +267,12 @@ const insertParsedTransaction = (req) => {
                 const authority = data?.transaction.message.accountKeys[instruction.accounts[2]] // old authority
                 const authority2 = data?.transaction.message.accountKeys[instruction.accounts[3]] // new authority
                 const authority3 = data?.transaction.message.accountKeys[instruction.accounts[4]] // custodian
+                const message = `${program},${instructionType},${signature},${err},${slot},${blocktime},${fee},${(new PublicKey(authority)).toBase58()},${(new PublicKey(authority2)).toBase58()},${(new PublicKey(authority3)).toBase58()},${(new PublicKey(source)).toBase58()},,,,,`;
+                console.log(message);
+                const encodedHash = hashMessage(message);
                 const fields = ['program', 'type', 'signature', 'err', 'slot', 'blocktime', 'fee', 'authority', 'authority2', 'authority3', 'source','serial']
                 const values = [`'${program}'`,`'${instructionType}'`,`'${signature}'`,`'${err}'`,slot,blocktime,fee,`'${(new PublicKey(authority)).toBase58()}'`,`'${(new PublicKey(authority2)).toBase58()}'`,`'${(new PublicKey(authority3)).toBase58()}'`,`'${(new PublicKey(source)).toBase58()}',${encodedHash}'`];
-                console.log(`${program},${instructionType},${signature},${err},${slot},${blocktime},${fee},${authority},${authority2},${authority3},${(new PublicKey(source)).toBase58()},,,,,${encodedHash}`);
+                return insertData(signature, fields, values);
               }
           } 
           else if (program == 'system'){
@@ -280,7 +287,7 @@ const insertParsedTransaction = (req) => {
                   const encodedHash = hashMessage(message);
                   const fields = ['program','type','signature','err','slot','blocktime','fee','source','destination','uiAmount','serial'];
                   const values = [`'${program}'`,`'${instructionType}'`,`'${signature}'`,`'${err}'`,slot,blocktime,fee,`'${(new PublicKey(from)).toBase58()}'`,`'${(new PublicKey(to)).toBase58()}'`,uiAmount,`'${encodedHash}'`];
-                  insertData(signature, fields, values);
+                  return insertData(signature, fields, values);
               }
               else if (instructionType == 'createAccountWithSeed') {
                   const deserialized = CreateAccountWithSeedLayout.decode(ix);
@@ -295,7 +302,7 @@ const insertParsedTransaction = (req) => {
                   const encodedHash = hashMessage(message);
                   const fields = ['program','type','signature','err','slot','blocktime','fee','source','destination','misc1','uiAmount','serial'];
                   const values = [`'${program}'`,`'${instructionType}'`,`'${signature}'`,`'${err}'`,slot,blocktime,fee,`'${from}'`,`'${to}'`,`'${seed}'`,`'${uiAmount}'`,`'${encodedHash}'`];
-                  insertData(signature, fields, values);
+                  return insertData(signature, fields, values);
 
               }
               else if (instructionType == 'transfer') {
@@ -309,7 +316,7 @@ const insertParsedTransaction = (req) => {
                   const encodedHash = hashMessage(message);
                   const fields = ['program','type','signature','err','slot','blocktime','fee','source','destination','uiAmount','serial'];
                   const values = [`'${program}'`,`'${instructionType}'`,`'${signature}'`,`'${err}'`,slot,blocktime,fee,`'${(new PublicKey(from)).toBase58()}'`,`'${(new PublicKey(to)).toBase58()}'`,uiAmount,`'${encodedHash}'`];
-                  insertData(signature, fields, values);
+                  return insertData(signature, fields, values);
               }
           } 
           else if (program == 'spl-token') {
@@ -335,7 +342,7 @@ const insertParsedTransaction = (req) => {
                   const encodedHash = hashMessage(message);
                   const fields = ['program','type','signature','err','slot','blocktime','fee','authority','source','destination','misc2','uiAmount','serial']
                   const values = [`'${program}'`,`'${instructionType}'`,`'${signature}'`,`'${err}'`,slot,blocktime,fee,`'${(new PublicKey(authority)).toBase58()}'`,`'${(new PublicKey(source)).toBase58()}'`,`'${(new PublicKey(destination)).toBase58()}'`,decimals,uiAmount,`'${encodedHash}'`];
-                  insertData(signature, fields, values);
+                  return insertData(signature, fields, values);
               } 
               else if (instructionType == 'transferChecked') {
                 const source = data?.transaction.message.accountKeys[instruction.accounts[0]]
@@ -346,12 +353,12 @@ const insertParsedTransaction = (req) => {
                   const amount = Number(deserialized.amount);
                   const decimals = Number(deserialized.decimals);
                   const uiAmount = amount / 10 ** decimals;
-                  const message = `${program},${instructionType},${signature},${err},${slot},${blocktime},${fee},${authority},,,${source},${destination}, ,${mint},${decimals},${uiAmount}`;
+                  const message = `${program},${instructionType},${signature},${err},${slot},${blocktime},${fee},${authority},,,${source},${destination},,${mint},${decimals},${uiAmount}`;
                   console.log(message);
                   const encodedHash = hashMessage(message);
                   const fields = ['program','type','signature','err','slot','blocktime','fee','authority','source','destination','misc1','misc2','uiAmount','serial']
                   const values = [`'${program}'`,`'${instructionType}'`,`'${signature}'`,`'${err}'`,slot,blocktime,fee,`'${(new PublicKey(authority)).toBase58()}'`,`'${(new PublicKey(source)).toBase58()}'`,`'${(new PublicKey(destination)).toBase58()}'`,`'${(new PublicKey(mint)).toBase58()}'`,decimals,uiAmount,`'${encodedHash}'`];
-                  insertData(signature, fields, values);
+                  return insertData(signature, fields, values);
               }
           }
           else {
@@ -361,7 +368,9 @@ const insertParsedTransaction = (req) => {
   } catch (err) {
       console.log(err);
   }
-    
+  
+    // Wait for all insertData promises to resolve and return the resulting promise
+    return Promise.all(promises);
 
 }
 

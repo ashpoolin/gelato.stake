@@ -4,6 +4,7 @@ const sha256 = require('crypto-js/sha256');
 const BN = require('bn.js');
 const Buffer = require('buffer').Buffer;
 const { Connection, LAMPORTS_PER_SOL, PublicKey} = require('@solana/web3.js');
+
 const { publicKey, u64 } = require('@solana/buffer-layout-utils');
 const { blob,  u8, u32, nu64, ns64, struct, seq } = require('@solana/buffer-layout'); // Layout
 // import BN from 'bn.js';
@@ -226,11 +227,20 @@ const insertParsedTransaction = (req) => {
                 const from = data?.transaction.message.accountKeys[instruction.accounts[1]] // source
                 const to = data?.transaction.message.accountKeys[instruction.accounts[0]] // destination
                 const stakeAuthority = data?.transaction.message.accountKeys[instruction.accounts[4]] // stake authority
+                const uiAmount = data?.transaction.message.accountKeys.map((key, index) => {
+                  if (key.toString() === to.toString()) {
+                    const balanceChange = data?.meta.postBalances[index] - data?.meta.preBalances[index];
+                    // lamports = data?.meta.postBalances[instruction.accounts[1]] - [instruction.accounts[1]]; // example from createAccount
+                    // const uiAmount = lamports / LAMPORTS_PER_SOL
+                      return balanceChange / LAMPORTS_PER_SOL;
+                  }
+                }).filter(Boolean)[0]; // Filter out undefined and take the first valid entry
+                // add uiAmount based on final balance of the stake
                 const message = `${program},${instructionType},${signature},${err},${slot},${blocktime},${fee},${stakeAuthority},,,${(new PublicKey(from)).toBase58()},${(new PublicKey(to)).toString()},,,,`;
                 console.log(message);
                 const encodedHash = hashMessage(message);
-                const fields = ['program', 'type', 'signature', 'err', 'slot', 'blocktime', 'fee', 'authority', 'source', 'destination', 'serial']
-                const values = [`'${program}'`,`'${instructionType}'`,`'${signature}'`,`'${err}'`,slot,blocktime,fee,`'${(new PublicKey(stakeAuthority)).toBase58()}'`,`'${(new PublicKey(from)).toBase58()}'`,`'${(new PublicKey(to)).toBase58()}'`,`'${encodedHash}'`];
+                const fields = ['program', 'type', 'signature', 'err', 'slot', 'blocktime', 'fee', 'authority', 'source', 'destination', 'uiAmount', 'serial']
+                const values = [`'${program}'`,`'${instructionType}'`,`'${signature}'`,`'${err}'`,slot,blocktime,fee,`'${(new PublicKey(stakeAuthority)).toBase58()}'`,`'${(new PublicKey(from)).toBase58()}'`,`'${(new PublicKey(to)).toBase58()}'`,uiAmount,`'${encodedHash}'`];
                 return insertData(signature, fields, values);
               }
               else if (instructionType == 'split') {
